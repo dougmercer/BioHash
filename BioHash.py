@@ -118,10 +118,6 @@ def _compute_lookup_value(string):
 
 
 def _suffix_prefix_correction(string):
-    # This function currently induces O(nk) worst case time
-    # Must figure out a way to simultaneously resolve the following two strs:
-    # cccccccc - correct answer should be shift = 8
-    # acagcaca - correct answer should be shift = 5
     n = len(string)
     best_suffix = 'z'
     correction = -1
@@ -142,21 +138,8 @@ if __name__ == "__main__":
     word_length = int(sys.argv[3])
     # Default parameters
     alphabet = 'acgt'
-    # words = BioTest.gen_words(num_words, word_length, alphabet)
-    words = ['aacgcaacgcaacgcaacgcaacgcaacgcaacgcaacgcaacgcaacgcaacgcaacgcaacgcaa']
+    words = BioTest.gen_words(num_words, word_length, alphabet)
     exp = Experiment(words, sslen, alphabet)
     [hashes, wrong] = BioTest.hash_compare(exp)
-    # [hashes, reads, wrong] = BioTest.hash_wrong(exp)
-    # BioTest.print_lines(reads)
     BioTest.print_lines(hashes)
     print(wrong)
-    # print(BioTest.get_worst_word(exp, exp.shift_hash))
-    # Note: results of hashing should be stored in Experiment
-    # print(BioTest.get_best_word(exp, exp.shift_hash))
-    # Current configuration:
-    # test 1,000,000 random strings of length 100
-    # find 8-minimizer
-    # result
-    # 0 errors
-    # worst_word was tgaccggaacaggaaaagtcctttccagcagtacgcgaaaaagtagcaggcggtcttggacgaaggtggcagaacagtgaaacacaaaaaaaggtattag
-    # which required 126 comparisons

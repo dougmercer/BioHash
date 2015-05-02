@@ -24,7 +24,7 @@ $ ./BioHash.py sslen num_words word_length
 """
 
 # Magic names/numbers
-lookup_dir = '/home/dmercer/var/bioinf2/'
+lookup_dir = '/home/dmercer/var/bioinf3/'
 
 
 class Experiment(object):
@@ -37,6 +37,8 @@ class Experiment(object):
         self.sslen = sslen
         self.alphabet = alphabet
         self.lookup = make_lookup(sslen, alphabet)
+        self.hashes = []
+        self.naive_hashes = []
 
     def shift_hash(self, read):
         best = 'z'
@@ -78,6 +80,12 @@ class Experiment(object):
                     break
         return [best, iters]
 
+    def hash_all(self, hashfcn):
+        hashes = []
+        for read in self.reads:
+            hashes.append(hashfcn(read))
+        return hashes
+
 
 def make_lookup(sslen, alphabet):
     lookup = {}
@@ -89,6 +97,7 @@ def make_lookup(sslen, alphabet):
             lookup_small = _make_lookup_slice(length, alphabet)
             pickle.dump(lookup_small, open(lookup_path, 'wb'))
         lookup.update(lookup_small)
+        lookup['a'*length] = length
     lookup['a'*sslen] = -1  # for short circuit if perfect substring
     return lookup
 
@@ -140,6 +149,23 @@ if __name__ == "__main__":
     alphabet = 'acgt'
     words = BioTest.gen_words(num_words, word_length, alphabet)
     exp = Experiment(words, sslen, alphabet)
-    [hashes, wrong] = BioTest.hash_compare(exp)
+    exp.naive_hashes = exp.hash_all(exp.naive_hash)
+    exp.hashes = exp.hash_all(exp.shift_hash)
+    [hashes, reads, wrong] = BioTest.hash_wrong(exp)
     BioTest.print_lines(hashes)
-    print(wrong)
+    BioTest.print_lines(reads)
+    print('Number of incorrectly hashed words = ' + str(wrong))
+    print('Shift Hash')
+    print('Worst:')
+    print(BioTest.get_worst_word(exp, hashtype='shift'))
+    print('Best:')
+    print(BioTest.get_best_word(exp, hashtype='shift'))
+    print('Average:')
+    print(BioTest.get_avg_comps(exp, hashtype='shift'))
+    print('Naive Hash')
+    print('Worst:')
+    print(BioTest.get_worst_word(exp, hashtype='naive'))
+    print('Best:')
+    print(BioTest.get_best_word(exp, hashtype='naive'))
+    print('Average:')
+    print(BioTest.get_avg_comps(exp, hashtype='naive'))

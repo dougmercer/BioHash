@@ -36,7 +36,7 @@ class Experiment(object):
         self.reads = reads
         self.sslen = sslen
         self.alphabet = alphabet
-        self.lookup = make_lookup(sslen, alphabet)
+        self.lookup = make_lookup(sslen, alphabet, 'builtin'`)
         self.hashes = []
         self.naive_hashes = []
 
@@ -87,10 +87,44 @@ class Experiment(object):
         return hashes
 
 
-def make_lookup(sslen, alphabet):
-    lookup = {}
+class RollingDict(dict):
+    def __init__(self, sslen, alphabet):
+        self.current_hash = 0
+        self.itemlist = []
+        self.values = self.init_values(sslen, alphabet)
+
+    def __getitem__(self, key):
+        [length, index] = self.compute_hash(key)
+        return self.values[length, index]
+
+    def __setitem__(self, key, value):
+        [length, index] = self.compute_hash(key)
+        self.values[length, index] = value
+        return self
+
+
+
+    def init_values(self, sslen, alphabet):
+        values = []
+        for length in range(1, sslen + 1):
+            values.append([0]*len(alphabet)**length)
+        return values
+
+    def update(self, aslice):
+        length = len(aslice[0])
+        self.values[length] = aslice
+        return self
+
+
+def make_lookup(sslen, alphabet, hashtype):
+    if hashtype == 'builtin':
+        lookup = {}
+        filestr = 'table'
+    else:
+        lookup = RollingDict()
+        filestr = 'rtable'
     for length in range(1, sslen + 1):
-        lookup_path = lookup_dir + 'table' + str(length) + '.p'
+        lookup_path = lookup_dir + filestr + str(length) + '.p'
         if os.path.isfile(lookup_path):
             lookup_small = pickle.load(open(lookup_path, 'rb'))
         else:
@@ -114,8 +148,8 @@ def _compute_lookup_value(string):
     n = len(string)
     curstr = 'z'*n
     for i in range(n):
-        if (string[i:n] + 'z'*(n-i)) < curstr:
-            curstr = string[i:n] + 'z'*(n-i)
+        if (string[i:n] + 'z'*i) < curstr:
+            curstr = string[i:n] + 'z'*i
             value = i
     if value == 0:
         correction = _suffix_prefix_correction(string)
@@ -132,7 +166,7 @@ def _suffix_prefix_correction(string):
     correction = -1
     for i in range(1, n):
         if string[0:i] == string[n - i:n]:
-            padded_suffix = string[0:i] + 'a'*(n-i)
+            padded_suffix = string[0:i] + 'a'*i
             if padded_suffix <= best_suffix:
                 best_suffix = padded_suffix
                 correction = n - i
